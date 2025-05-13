@@ -1,5 +1,5 @@
 {
-  "name": "@rsp-app/server",
+  "name": "@warehouse/server",
   "version": "0.0.0",
   "type": "module",
   "license": "MIT",
@@ -22,8 +22,12 @@
   "dependencies": {
     "@effect/platform": "latest",
     "@effect/platform-node": "latest",
-    "@rsp-app/domain": "workspace:^",
-    "effect": "latest"
+    "@effect/sql": "latest",
+    "@effect/sql-sqlite-node": "latest",
+    "@effect/experimental": "latest",
+    "@warehouse/domain": "workspace:^",
+    "effect": "latest",
+    "uuid": "11.1.0"
   },
   "effect": {
     "generateExports": {

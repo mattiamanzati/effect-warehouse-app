@@ -1,13 +1,10 @@
 import * as path from "node:path"
 import type { UserConfig } from "vitest/config"
 
-const alias = (name: string) => {
-  const target = process.env.TEST_DIST !== undefined ? "dist/dist/esm" : "src"
-  return ({
-    [`${name}/test`]: path.join(__dirname, "packages", name, "test"),
-    [`${name}`]: path.join(__dirname, "packages", name, target)
-  })
-}
+const alias = (name: string) => ({
+  [`@warehouse/${name}/test`]: path.join(__dirname, "packages", name, "test"),
+  [`@warehouse/${name}`]: path.join(__dirname, "packages", name, "src")
+})
 
 // This is a workaround, see https://github.com/vitest-dev/vitest/issues/4744
 const config: UserConfig = {
@@ -27,7 +24,6 @@ const config: UserConfig = {
     },
     include: ["test/**/*.test.ts"],
     alias: {
-      ...alias("cli"),
       ...alias("domain"),
       ...alias("server")
     }
