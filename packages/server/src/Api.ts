@@ -1,27 +1,28 @@
 import { HttpApiBuilder } from "@effect/platform"
-import { Product, ProductApi, ProductId } from "@warehouse/domain/ProductApi"
+import { ProductApi } from "@warehouse/domain/ProductApi"
 import { Effect, Layer } from "effect"
+import * as ProductCatalog from "./ProductCatalog.js"
 
 const ProductApiLive = HttpApiBuilder.group(
   ProductApi,
   "products",
   (handlers) =>
-    handlers.handle("getAllProducts", () =>
-      Effect.gen(function*() {
-        yield* Effect.sleep(5000)
-        return [
-          new Product({ id: new ProductId({ value: "1" }), name: "First Product" }),
-          new Product({
-            id: new ProductId({ value: "2" }),
-            name: "Second Product",
-            description: "test description"
-          })
-        ]
-      })).handle("createProduct", (request) =>
-        Effect.gen(function*() {
-          yield* Effect.log(request.payload)
-          return new Product({ id: new ProductId({ value: "1" }), ...request.payload })
-        }))
+    Effect.gen(function*() {
+      const catalog = yield* ProductCatalog.ProductCatalog
+
+      return handlers.handle("getAllProducts", () => catalog.listAll()).handle("getProduct", (r) =>
+        catalog.getProduct(r.path.productSku)).handle("createProduct", (r) =>
+          catalog.createProduct({
+            sku: r.payload.sku.value,
+            name: r.payload.name,
+            description: r.payload.description || ""
+          })).handle("updateProduct", (r) =>
+          catalog.updateProduct(r.path.productSku, {
+            name: r.payload.name,
+            description: r.payload.description || ""
+          })).handle("deleteProduct", (r) =>
+          catalog.deleteProduct(r.path.productSku))
+    })
 )
 
 export const ApiLive = HttpApiBuilder.api(ProductApi).pipe(

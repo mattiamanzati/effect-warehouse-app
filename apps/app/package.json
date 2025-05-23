@@ -18,7 +18,10 @@
     "react": "19.0.0",
     "react-dom": "19.0.0",
     "react-native": "0.79.2",
-    "react-native-web": "^0.20.0"
+    "react-native-web": "^0.20.0",
+    "@effect-rx/rx-react": "^0.34.2",
+    "@effect-rx/rx": "^0.39.2",
+    "react-native-paper": "^5.14.5"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
