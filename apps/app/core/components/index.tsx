@@ -15,17 +15,38 @@ export const FormField = (props: React.PropsWithChildren<{ style?: RN.ViewStyle 
 
 export const TextField = (props: RNP.TextInputProps) => <RNP.TextInput {...props} mode="outlined" />
 
-export const AppBar = (props: React.PropsWithChildren<{ title: string; style?: RN.ViewStyle }>) => (
+export const AppBar = (
+  props: React.PropsWithChildren<{ title: string; onBack?: () => void; style?: RN.ViewStyle }>
+) => (
   <RNP.Appbar.Header>
+    {props.onBack ? <RNP.Appbar.BackAction onPress={props.onBack} /> : null}
     <RNP.Appbar.Content title={props.title} />
   </RNP.Appbar.Header>
 )
 export const Button = (
-  props: React.PropsWithChildren<{ title: string; onPress: () => void; style?: RN.ViewStyle }>
+  props: React.PropsWithChildren<
+    { type?: "action" | "delete"; title: string; onPress: () => void; style?: RN.ViewStyle }
+  >
 ) => (
-  <RNP.Button mode="contained" onPress={props.onPress} style={[{ marginBottom: 16 }, props.style]}>
+  <RNP.Button
+    buttonColor={props.type === "delete" ? "#FF0000" : undefined}
+    mode="contained"
+    onPress={props.onPress}
+    style={[{ marginBottom: 16 }, props.style]}
+  >
     {props.title}
   </RNP.Button>
+)
+
+export const FAB = (
+  props: React.PropsWithChildren<{ label?: string; icon: string; onPress: () => void; style?: RN.ViewStyle }>
+) => (
+  <RNP.FAB
+    icon={props.icon}
+    label={props.label}
+    style={[{ position: "absolute", bottom: 16, right: 16 }, props.style]}
+    onPress={props.onPress}
+  />
 )
 
 const currentSnackEntries = appRuntime.rx(() =>
@@ -52,8 +73,9 @@ export const SnackbarProvider = (props: React.PropsWithChildren<{ style?: RN.Vie
       {props.children}
       {entries.map((entry, index) => (
         <RNP.Snackbar
-          key={index}
+          key={JSON.stringify(entry) + index} /** TODO: add proper id when creating notifications */
           visible={true}
+          duration={1000}
           style={entry.type === "error" ? { backgroundColor: "#FF0000" } : null}
           onDismiss={() => onDismiss(entry)}
         >

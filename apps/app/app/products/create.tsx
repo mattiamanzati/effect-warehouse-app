@@ -3,9 +3,11 @@ import * as HttpApiClient from "@effect/platform/HttpApiClient"
 import { ProductSku } from "@warehouse/domain/Product"
 import { ProductApi } from "@warehouse/domain/ProductApi"
 import { Effect } from "effect"
-import { appRuntime } from "../core/appRuntime"
-import { AppBar, Button, Form, FormField, TextField } from "../core/components/index"
-import * as SnackbarService from "../core/services/SnackbarService"
+import { useRouter } from "expo-router"
+import { appRuntime } from "../../core/appRuntime"
+import { AppBar, Button, Form, FormField, TextField } from "../../core/components/index"
+import { RouterService } from "../../core/services/RouterService"
+import * as SnackbarService from "../../core/services/SnackbarService"
 
 const productSku = Rx.make("")
 const productName = Rx.make("")
@@ -29,6 +31,8 @@ const productCreate = appRuntime.fn((_: void, ctx) =>
     yield* snackService.addNotification({
       text: `Product ${product.name} created`
     })
+
+    yield* RouterService.navigate("/products")
   }).pipe(
     SnackbarService.ignoreLogged
   )
@@ -39,10 +43,12 @@ export default function ProductList() {
   const [name, setName] = useRx(productName)
   const [description, setDescription] = useRx(productDescription)
   const addProduct = useRxSet(productCreate)
+  const router = useRouter()
+  const onBack = () => router.navigate("/products")
 
   return (
     <>
-      <AppBar title="Create Product" />
+      <AppBar onBack={onBack} title="Create Product" />
       <Form>
         <FormField>
           <TextField value={sku} onChangeText={setSku} label="SKU" />

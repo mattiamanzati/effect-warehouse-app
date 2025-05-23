@@ -3,8 +3,10 @@ import * as Result from "@effect-rx/rx/Result"
 import * as HttpApiClient from "@effect/platform/HttpApiClient"
 import { ProductApi } from "@warehouse/domain/ProductApi"
 import { Effect } from "effect"
+import { useRouter } from "expo-router"
 import * as RNP from "react-native-paper"
-import { appRuntime } from "../core/appRuntime"
+import { appRuntime } from "../../core/appRuntime"
+import { FAB } from "../../core/components"
 
 const productList = appRuntime.rx(() =>
   Effect.gen(function*() {
@@ -18,6 +20,7 @@ const productList = appRuntime.rx(() =>
 
 export default function ProductList() {
   const products = useRxValue(productList)
+  const router = useRouter()
 
   const content = Result.match(products, {
     onInitial: () => <RNP.ActivityIndicator animating={true} />,
@@ -25,7 +28,16 @@ export default function ProductList() {
     onSuccess: ({ value }) => (
       <>
         {value.map((product) => (
-          <RNP.List.Item key={product.sku.value} title={product.name} description={product.description} />
+          <RNP.List.Item
+            onPress={() =>
+              router.navigate({
+                pathname: "/products/edit/[productSku]",
+                params: { productSku: product.sku.value }
+              })}
+            key={product.sku.value}
+            title={product.name}
+            description={product.description}
+          />
         ))}
       </>
     )
@@ -37,6 +49,7 @@ export default function ProductList() {
         <RNP.Appbar.Content title="Product List" />
       </RNP.Appbar.Header>
       {content}
+      <FAB icon="plus" onPress={() => router.navigate("/products/create")} label="Create" />
     </>
   )
 }
