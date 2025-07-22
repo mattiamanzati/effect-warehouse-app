@@ -35,7 +35,7 @@ export class NoSuchUserError extends Schema.TaggedError<NoSuchUserError>("NoSuch
 }) {}
 
 export class UserApi extends HttpApiGroup.make("users").add(
-  HttpApiEndpoint.post("signup", "/signup").setPayload(
-    UserSignupRequestData
-  ).addError(UserEmailAlreadyTakenError)
+  HttpApiEndpoint.post("signup", "/signup")
+    .setPayload(UserSignupRequestData)
+    .addError(UserEmailAlreadyTakenError)
 ) {}
