@@ -1,9 +1,9 @@
 import { HttpApi, HttpApiEndpoint, HttpApiGroup, HttpApiSchema } from "@effect/platform"
 import { Schema } from "effect"
-import { Product, ProductNotFoundError, ProductSkuAlreadyExistsError, ProductSkuFromString } from "./Product.js"
+import { Product, ProductNotFoundError, ProductSku, ProductSkuAlreadyExistsError } from "./Product.js"
 
 export class CreateProductPayload extends Schema.Class<CreateProductPayload>("CreateProductPayload")({
-  sku: ProductSkuFromString,
+  sku: ProductSku,
   name: Schema.NonEmptyString,
   description: Schema.optional(Schema.String)
 }) {}
@@ -13,7 +13,7 @@ export class UpdateProductPayload extends Schema.Class<UpdateProductPayload>("Up
   description: Schema.optional(Schema.String)
 }) {}
 
-const productSkuFromPath = HttpApiSchema.param("productSku", ProductSkuFromString)
+const productSkuFromPath = HttpApiSchema.param("productSku", ProductSku)
 
 export class ProductApiGroup extends HttpApiGroup.make("products").add(
   HttpApiEndpoint.get("getAllProducts", "/products").addSuccess(Schema.Array(Product))

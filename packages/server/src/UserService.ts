@@ -35,7 +35,7 @@ export class UserService extends Effect.Service<UserService>()("UserService", {
       const existingUserForEmail = yield* sql`SELECT email FROM users WHERE email = ${data.email}`
 
       if (existingUserForEmail.length > 0) {
-        yield* Effect.fail(new UserEmailAlreadyTakenError({ email: data.email }))
+        return yield* Effect.fail(new UserEmailAlreadyTakenError({ email: data.email }))
       }
 
       const userId = UserId.make(uuidv4())

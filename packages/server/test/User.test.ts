@@ -18,7 +18,7 @@ const makeEmptyDb = Effect.gen(function*() {
 )
 
 const TestLayer = UserService.Default.pipe(
-  Layer.provide(Layer.effect(SqlClient.SqlClient, makeEmptyDb))
+  Layer.provide(Layer.scoped(SqlClient.SqlClient, makeEmptyDb))
 )
 
 describe("UserService", () => {

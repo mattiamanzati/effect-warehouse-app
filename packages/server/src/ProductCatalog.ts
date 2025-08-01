@@ -1,9 +1,10 @@
-import { Product, ProductNotFoundError, ProductSku, ProductSkuAlreadyExistsError } from "@warehouse/domain/Product"
+import type { ProductSku } from "@warehouse/domain/Product"
+import { Product, ProductNotFoundError, ProductSkuAlreadyExistsError } from "@warehouse/domain/Product"
 import * as Array from "effect/Array"
 import * as Effect from "effect/Effect"
 
 export interface CreateProductData {
-  sku: string
+  sku: ProductSku
   name: string
   description: string
 }
@@ -15,7 +16,7 @@ export interface UpdateProductData {
 
 export class ProductCatalog extends Effect.Service<ProductCatalog>()("ProductCatalog", {
   effect: Effect.gen(function*() {
-    const products = new Map<string, Product>()
+    const products = new Map<ProductSku, Product>()
     yield* Effect.void
 
     function listAll() {
@@ -24,7 +25,7 @@ export class ProductCatalog extends Effect.Service<ProductCatalog>()("ProductCat
 
     function getProduct(productSku: ProductSku) {
       return Effect.gen(function*() {
-        const product = products.get(productSku.value)
+        const product = products.get(productSku)
         if (!product) return yield* Effect.fail(new ProductNotFoundError())
 
         return product
@@ -38,7 +39,7 @@ export class ProductCatalog extends Effect.Service<ProductCatalog>()("ProductCat
         products.set(
           data.sku,
           new Product({
-            sku: ProductSku.make({ value: data.sku }),
+            sku: data.sku,
             name: data.name,
             description: data.description
           })
@@ -48,12 +49,12 @@ export class ProductCatalog extends Effect.Service<ProductCatalog>()("ProductCat
       })
     }
 
-    function updateProduct(productId: ProductSku, data: UpdateProductData) {
+    function updateProduct(sku: ProductSku, data: UpdateProductData) {
       return Effect.gen(function*() {
-        const product = products.get(productId.value)
+        const product = products.get(sku)
         if (!product) return yield* Effect.fail(new ProductNotFoundError())
         products.set(
-          product.sku.value,
+          product.sku,
           new Product({
             ...product,
             name: data.name,
@@ -61,15 +62,15 @@ export class ProductCatalog extends Effect.Service<ProductCatalog>()("ProductCat
           })
         )
 
-        return products.get(product.sku.value)!
+        return products.get(product.sku)!
       })
     }
 
-    function deleteProduct(productId: ProductSku) {
+    function deleteProduct(sku: ProductSku) {
       return Effect.sync(() => {
-        if (!products.has(productId.value)) return
+        if (!products.has(sku)) return
 
-        products.delete(productId.value)
+        products.delete(sku)
       })
     }
 

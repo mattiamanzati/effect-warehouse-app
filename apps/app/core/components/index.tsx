@@ -1,22 +1,23 @@
 import { useRxSet, useRxSuspenseSuccess } from "@effect-rx/rx-react"
 import { Effect, pipe } from "effect"
 import * as Stream from "effect/Stream"
-import * as RN from "react-native"
+import type { ViewStyle } from "react-native"
+import { View } from "react-native"
 import * as RNP from "react-native-paper"
 import { appRuntime } from "../appRuntime"
 import * as SnackbarService from "../services/SnackbarService"
 
-export const Form = (props: React.PropsWithChildren<{ style?: RN.ViewStyle }>) => (
-  <RN.View style={[{ padding: 16 }, props.style]}>{props.children}</RN.View>
+export const Form = (props: React.PropsWithChildren<{ style?: ViewStyle }>) => (
+  <View style={[{ padding: 16 }, props.style]}>{props.children}</View>
 )
-export const FormField = (props: React.PropsWithChildren<{ style?: RN.ViewStyle }>) => (
-  <RN.View style={[{ marginBottom: 16 }, props.style]}>{props.children}</RN.View>
+export const FormField = (props: React.PropsWithChildren<{ style?: ViewStyle }>) => (
+  <View style={[{ marginBottom: 16 }, props.style]}>{props.children}</View>
 )
 
 export const TextField = (props: RNP.TextInputProps) => <RNP.TextInput {...props} mode="outlined" />
 
 export const AppBar = (
-  props: React.PropsWithChildren<{ title: string; onBack?: () => void; style?: RN.ViewStyle }>
+  props: React.PropsWithChildren<{ title: string; onBack?: () => void; style?: ViewStyle }>
 ) => (
   <RNP.Appbar.Header>
     {props.onBack ? <RNP.Appbar.BackAction onPress={props.onBack} /> : null}
@@ -25,7 +26,7 @@ export const AppBar = (
 )
 export const Button = (
   props: React.PropsWithChildren<
-    { type?: "action" | "delete"; title: string; onPress: () => void; style?: RN.ViewStyle }
+    { type?: "action" | "delete"; title: string; onPress: () => void; style?: ViewStyle }
   >
 ) => (
   <RNP.Button
@@ -39,7 +40,7 @@ export const Button = (
 )
 
 export const FAB = (
-  props: React.PropsWithChildren<{ label?: string; icon: string; onPress: () => void; style?: RN.ViewStyle }>
+  props: React.PropsWithChildren<{ label?: string; icon: string; onPress: () => void; style?: ViewStyle }>
 ) => (
   <RNP.FAB
     icon={props.icon}
@@ -65,7 +66,7 @@ const dismissSnackEntry = appRuntime.fn((entry: SnackbarService.SnackbarNotifica
   })
 )
 
-export const SnackbarProvider = (props: React.PropsWithChildren<{ style?: RN.ViewStyle }>) => {
+export const SnackbarProvider = (props: React.PropsWithChildren<{ style?: ViewStyle }>) => {
   const entries = useRxSuspenseSuccess(currentSnackEntries).value
   const onDismiss = useRxSet(dismissSnackEntry)
   return (

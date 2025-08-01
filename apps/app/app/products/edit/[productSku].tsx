@@ -1,6 +1,7 @@
 import { Rx, useRx, useRxSet, useRxValue } from "@effect-rx/rx-react"
 import * as Result from "@effect-rx/rx/Result"
 import * as HttpApiClient from "@effect/platform/HttpApiClient"
+import { ProductSku } from "@warehouse/domain/Product"
 import { ProductApi } from "@warehouse/domain/ProductApi"
 import { Effect } from "effect"
 import { useLocalSearchParams, useRouter } from "expo-router"
@@ -10,7 +11,7 @@ import { AppBar, Button, Form, FormField, TextField } from "../../../core/compon
 import { RouterService } from "../../../core/services/RouterService"
 import * as SnackbarService from "../../../core/services/SnackbarService"
 
-const productSkuRx = Rx.make("")
+const productSkuRx = Rx.make(ProductSku.make("<productSku>"))
 const productName = Rx.make("")
 const productDescription = Rx.make("")
 
@@ -21,7 +22,7 @@ const loadProduct = appRuntime.rx((ctx) =>
       baseUrl: "http://localhost:3000/"
     })
 
-    const product = yield* client.products.getProduct({ path: { productSku: productSku as any } })
+    const product = yield* client.products.getProduct({ path: { productSku } })
     ctx.set(productName, product.name)
     ctx.set(productDescription, product.description || "")
   }).pipe(
@@ -38,7 +39,7 @@ const productUpdate = appRuntime.fn((_: void, ctx) =>
 
     const product = yield* client.products.updateProduct({
       path: {
-        productSku: (ctx(productSkuRx)) as any
+        productSku: ctx(productSkuRx)
       },
       payload: {
         name: ctx(productName),
@@ -84,7 +85,7 @@ export default function ProductEditLoader() {
     productSku: string
   }>()
   const setProductSku = useRxSet(productSkuRx)
-  React.useEffect(() => setProductSku(productSku), [productSku])
+  React.useEffect(() => setProductSku(ProductSku.make(productSku)), [productSku])
   const product = useRxValue(loadProduct)
 
   return Result.match(product, {

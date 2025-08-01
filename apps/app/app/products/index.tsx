@@ -32,9 +32,9 @@ export default function ProductList() {
             onPress={() =>
               router.navigate({
                 pathname: "/products/edit/[productSku]",
-                params: { productSku: product.sku.value }
+                params: { productSku: product.sku }
               })}
-            key={product.sku.value}
+            key={product.sku}
             title={product.name}
             description={product.description}
           />

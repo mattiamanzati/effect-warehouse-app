@@ -22,7 +22,7 @@ const productCreate = appRuntime.fn((_: void, ctx) =>
 
     const product = yield* client.products.createProduct({
       payload: {
-        sku: ProductSku.fromString(ctx(productSku)),
+        sku: ProductSku.make(ctx(productSku)),
         name: ctx(productName),
         description: ctx(productDescription)
       }

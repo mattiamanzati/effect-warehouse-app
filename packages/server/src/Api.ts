@@ -13,7 +13,7 @@ const ProductApiLive = HttpApiBuilder.group(
       return handlers.handle("getAllProducts", () => catalog.listAll()).handle("getProduct", (r) =>
         catalog.getProduct(r.path.productSku)).handle("createProduct", (r) =>
           catalog.createProduct({
-            sku: r.payload.sku.value,
+            sku: r.payload.sku,
             name: r.payload.name,
             description: r.payload.description || ""
           })).handle("updateProduct", (r) =>

@@ -1,21 +1,13 @@
 import * as Effect from "effect/Effect"
-import type { Router } from "expo-router"
+import * as Router from "expo-router"
 
 export class RouterService extends Effect.Service<RouterService>()("RouterService", {
   accessors: true,
   effect: Effect.sync(() => {
-    let router: Router | null = null
-
-    function navigate(url: string) {
-      return Effect.sync(() => router!.navigate(url))
+    function navigate(url: Router.Href) {
+      return Effect.sync(() => Router.router.navigate(url))
     }
 
-    function setCurrentRouter(
-      newRouter: Router
-    ) {
-      router = newRouter
-    }
-
-    return { navigate, setCurrentRouter }
+    return { navigate }
   })
 }) {}
