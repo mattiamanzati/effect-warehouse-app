@@ -8,12 +8,18 @@ export namespace ProductSku {
   export type Context = Schema.Schema.Context<typeof ProductSku>
 }
 
-export class Product extends Schema.TaggedClass<Product>("Product")("Product", {
+export class Product extends Schema.Class<Product>("Product")({
   sku: ProductSku,
   name: Schema.NonEmptyString,
-  description: Schema.optional(Schema.String)
+  description: Schema.OptionFromNullOr(Schema.String)
 }) {
 }
+
+export class ProductCatalogError
+  extends Schema.TaggedError<ProductCatalogError>("ProductCatalogError")("ProductCatalogError", {
+    cause: Schema.String
+  })
+{}
 
 export class ProductSkuAlreadyExistsError
   extends Schema.TaggedError<ProductSkuAlreadyExistsError>("ProductSkuAlreadyExistsError")(
@@ -23,6 +29,9 @@ export class ProductSkuAlreadyExistsError
     }
   )
 {
+  toString(): string {
+    return `The following SKU already exists: ${this.sku}`
+  }
 }
 
 export class ProductNotFoundError extends Schema.TaggedError<ProductNotFoundError>("ProductNotFoundError")(

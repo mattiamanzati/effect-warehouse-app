@@ -1,31 +1,37 @@
 import { Rx, useRx, useRxSet } from "@effect-rx/rx-react"
-import * as HttpApiClient from "@effect/platform/HttpApiClient"
-import { ProductSku } from "@warehouse/domain/Product"
-import { ProductApi } from "@warehouse/domain/ProductApi"
-import { Effect } from "effect"
+import { CreateProductPayload } from "@warehouse/domain/ProductApi"
+import { Effect, Schema } from "effect"
 import { useRouter } from "expo-router"
+import * as React from "react"
 import { appRuntime } from "../../core/appRuntime"
 import { AppBar, Button, Form, FormField, TextField } from "../../core/components/index"
+import { createUiMessageBag } from "../../core/hooks"
+import * as BackendApiService from "../../core/services/BackendApiService"
 import { RouterService } from "../../core/services/RouterService"
 import * as SnackbarService from "../../core/services/SnackbarService"
 
 const productSku = Rx.make("")
 const productName = Rx.make("")
 const productDescription = Rx.make("")
+const messageBag = createUiMessageBag({
+  sku: ["sku"],
+  name: ["name"],
+  description: ["description"]
+})
 
 const productCreate = appRuntime.fn((_: void, ctx) =>
   Effect.gen(function*() {
     const snackService = yield* SnackbarService.SnackbarService
-    const client = yield* HttpApiClient.make(ProductApi, {
-      baseUrl: "http://localhost:3000/"
+    const client = yield* BackendApiService.BackendApiService
+
+    const payload = yield* Schema.decode(CreateProductPayload)({
+      sku: ctx(productSku),
+      name: ctx(productName),
+      description: ctx(productDescription)
     })
 
     const product = yield* client.products.createProduct({
-      payload: {
-        sku: ProductSku.make(ctx(productSku)),
-        name: ctx(productName),
-        description: ctx(productDescription)
-      }
+      payload
     })
 
     yield* snackService.addNotification({
@@ -34,6 +40,7 @@ const productCreate = appRuntime.fn((_: void, ctx) =>
 
     yield* RouterService.navigate("/products")
   }).pipe(
+    messageBag.catchParseIssues,
     SnackbarService.ignoreLogged
   )
 )
@@ -45,6 +52,8 @@ export default function ProductList() {
   const addProduct = useRxSet(productCreate)
   const router = useRouter()
   const onBack = () => router.navigate("/products")
+  const messages = messageBag.useErrors()
+  const unmatchedErrors = messageBag.useUnmatchedErrors()
 
   return (
     <>
@@ -52,13 +61,17 @@ export default function ProductList() {
       <Form>
         <FormField>
           <TextField value={sku} onChangeText={setSku} label="SKU" />
+          {messages.sku}
         </FormField>
         <FormField>
           <TextField value={name} onChangeText={setName} label="Name" />
+          {messages.name}
         </FormField>
         <FormField>
           <TextField value={description} onChangeText={setDescription} label="Description" />
+          {messages.description}
         </FormField>
+        {unmatchedErrors}
         <Button title="Create" onPress={addProduct} />
       </Form>
     </>

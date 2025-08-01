@@ -1,15 +1,21 @@
 import { Rx, useRx, useRxSet, useRxValue } from "@effect-rx/rx-react"
 import * as Result from "@effect-rx/rx/Result"
-import * as HttpApiClient from "@effect/platform/HttpApiClient"
 import { ProductSku } from "@warehouse/domain/Product"
-import { ProductApi } from "@warehouse/domain/ProductApi"
-import { Effect } from "effect"
+import { UpdateProductPayload } from "@warehouse/domain/ProductApi"
+import { Effect, Option, Schema } from "effect"
 import { useLocalSearchParams, useRouter } from "expo-router"
 import * as React from "react"
 import { appRuntime } from "../../../core/appRuntime"
 import { AppBar, Button, Form, FormField, TextField } from "../../../core/components/index"
+import { createUiMessageBag } from "../../../core/hooks"
+import * as BackendApiService from "../../../core/services/BackendApiService"
 import { RouterService } from "../../../core/services/RouterService"
 import * as SnackbarService from "../../../core/services/SnackbarService"
+
+const messageBag = createUiMessageBag({
+  name: ["name"],
+  description: ["description"]
+})
 
 const productSkuRx = Rx.make(ProductSku.make("<productSku>"))
 const productName = Rx.make("")
@@ -18,13 +24,11 @@ const productDescription = Rx.make("")
 const loadProduct = appRuntime.rx((ctx) =>
   Effect.gen(function*() {
     const productSku = ctx(productSkuRx)
-    const client = yield* HttpApiClient.make(ProductApi, {
-      baseUrl: "http://localhost:3000/"
-    })
+    const client = yield* BackendApiService.BackendApiService
 
     const product = yield* client.products.getProduct({ path: { productSku } })
     ctx.set(productName, product.name)
-    ctx.set(productDescription, product.description || "")
+    ctx.set(productDescription, Option.getOrElse(product.description, () => ""))
   }).pipe(
     SnackbarService.ignoreLogged
   )
@@ -33,18 +37,18 @@ const loadProduct = appRuntime.rx((ctx) =>
 const productUpdate = appRuntime.fn((_: void, ctx) =>
   Effect.gen(function*() {
     const snackService = yield* SnackbarService.SnackbarService
-    const client = yield* HttpApiClient.make(ProductApi, {
-      baseUrl: "http://localhost:3000/"
+    const client = yield* BackendApiService.BackendApiService
+
+    const payload = yield* Schema.decode(UpdateProductPayload)({
+      name: ctx(productName),
+      description: ctx(productDescription)
     })
 
     const product = yield* client.products.updateProduct({
       path: {
         productSku: ctx(productSkuRx)
       },
-      payload: {
-        name: ctx(productName),
-        description: ctx(productDescription)
-      }
+      payload
     })
 
     yield* snackService.addNotification({
@@ -53,6 +57,7 @@ const productUpdate = appRuntime.fn((_: void, ctx) =>
 
     yield* RouterService.navigate("/products")
   }).pipe(
+    messageBag.catchParseIssues,
     SnackbarService.ignoreLogged
   )
 )
@@ -60,9 +65,7 @@ const productUpdate = appRuntime.fn((_: void, ctx) =>
 const deleteProduct = appRuntime.fn((_: void, ctx) =>
   Effect.gen(function*() {
     const snackService = yield* SnackbarService.SnackbarService
-    const client = yield* HttpApiClient.make(ProductApi, {
-      baseUrl: "http://localhost:3000/"
-    })
+    const client = yield* BackendApiService.BackendApiService
 
     yield* client.products.deleteProduct({
       path: {
@@ -102,6 +105,8 @@ export function ProductEdit() {
   const router = useRouter()
   const onBack = () => router.navigate("/products")
   const onDeleteProduct = useRxSet(deleteProduct)
+  const messages = messageBag.useErrors()
+  const unmatchedErrors = messageBag.useUnmatchedErrors()
 
   return (
     <>
@@ -109,10 +114,13 @@ export function ProductEdit() {
       <Form>
         <FormField>
           <TextField value={name} onChangeText={setName} label="Name" />
+          {messages.name}
         </FormField>
         <FormField>
           <TextField value={description} onChangeText={setDescription} label="Description" />
+          {messages.description}
         </FormField>
+        {unmatchedErrors}
         <Button title="Save" onPress={saveProduct} />
         <Button title="Delete" type="delete" onPress={onDeleteProduct} />
       </Form>

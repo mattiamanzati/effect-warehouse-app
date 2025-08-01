@@ -1,18 +1,16 @@
 import { useRxValue } from "@effect-rx/rx-react"
 import * as Result from "@effect-rx/rx/Result"
-import * as HttpApiClient from "@effect/platform/HttpApiClient"
-import { ProductApi } from "@warehouse/domain/ProductApi"
-import { Effect } from "effect"
+import { Effect, Option } from "effect"
+import * as Cause from "effect/Cause"
 import { useRouter } from "expo-router"
 import * as RNP from "react-native-paper"
 import { appRuntime } from "../../core/appRuntime"
 import { FAB } from "../../core/components"
+import * as BackendApiService from "../../core/services/BackendApiService"
 
 const productList = appRuntime.rx(() =>
   Effect.gen(function*() {
-    const client = yield* HttpApiClient.make(ProductApi, {
-      baseUrl: "http://localhost:3000/"
-    })
+    const client = yield* BackendApiService.BackendApiService
 
     return yield* client.products.getAllProducts()
   })
@@ -24,7 +22,7 @@ export default function ProductList() {
 
   const content = Result.match(products, {
     onInitial: () => <RNP.ActivityIndicator animating={true} />,
-    onFailure: (error) => <RNP.Text>{String(error)}</RNP.Text>,
+    onFailure: (error) => <RNP.Text>{Cause.pretty(error.cause)}</RNP.Text>,
     onSuccess: ({ value }) => (
       <>
         {value.map((product) => (
@@ -36,7 +34,7 @@ export default function ProductList() {
               })}
             key={product.sku}
             title={product.name}
-            description={product.description}
+            description={Option.getOrNull(product.description)}
           />
         ))}
       </>

@@ -1,5 +1,5 @@
 import { useRxSet, useRxSuspenseSuccess } from "@effect-rx/rx-react"
-import { Effect, pipe } from "effect"
+import { pipe } from "effect"
 import * as Stream from "effect/Stream"
 import type { ViewStyle } from "react-native"
 import { View } from "react-native"
@@ -12,6 +12,9 @@ export const Form = (props: React.PropsWithChildren<{ style?: ViewStyle }>) => (
 )
 export const FormField = (props: React.PropsWithChildren<{ style?: ViewStyle }>) => (
   <View style={[{ marginBottom: 16 }, props.style]}>{props.children}</View>
+)
+export const FormFieldHelper = (props: React.PropsWithChildren<{ type: "error" | "info"; style?: ViewStyle }>) => (
+  <RNP.HelperText type={props.type}>{props.children}</RNP.HelperText>
 )
 
 export const TextField = (props: RNP.TextInputProps) => <RNP.TextInput {...props} mode="outlined" />
@@ -52,18 +55,13 @@ export const FAB = (
 
 const currentSnackEntries = appRuntime.rx(() =>
   pipe(
-    SnackbarService.SnackbarService,
-    Effect.map((service) => service.changes),
+    SnackbarService.SnackbarService.changes,
     Stream.unwrap
   )
 )
 
 const dismissSnackEntry = appRuntime.fn((entry: SnackbarService.SnackbarNotificationItem) =>
-  Effect.gen(function*() {
-    const service = yield* SnackbarService.SnackbarService
-
-    yield* service.removeNotification(entry)
-  })
+  SnackbarService.SnackbarService.removeNotification(entry.id)
 )
 
 export const SnackbarProvider = (props: React.PropsWithChildren<{ style?: ViewStyle }>) => {
@@ -72,13 +70,17 @@ export const SnackbarProvider = (props: React.PropsWithChildren<{ style?: ViewSt
   return (
     <>
       {props.children}
-      {entries.map((entry, index) => (
+      {entries.map((entry) => (
         <RNP.Snackbar
-          key={JSON.stringify(entry) + index} /** TODO: add proper id when creating notifications */
+          key={entry.id}
           visible={true}
-          duration={1000}
+          duration={entry.duration || 5000}
           style={entry.type === "error" ? { backgroundColor: "#FF0000" } : null}
           onDismiss={() => onDismiss(entry)}
+          action={{
+            label: "Dismiss",
+            onPress: () => onDismiss(entry)
+          }}
         >
           {entry.text}
         </RNP.Snackbar>

@@ -1,77 +1,127 @@
-import type { ProductSku } from "@warehouse/domain/Product"
-import { Product, ProductNotFoundError, ProductSkuAlreadyExistsError } from "@warehouse/domain/Product"
-import * as Array from "effect/Array"
+import * as SqlClient from "@effect/sql/SqlClient"
+import * as SqlSchema from "@effect/sql/SqlSchema"
+import {
+  Product,
+  ProductCatalogError,
+  ProductNotFoundError,
+  ProductSku,
+  ProductSkuAlreadyExistsError
+} from "@warehouse/domain/Product"
+import type { Option } from "effect"
+import { flow, Schema } from "effect"
+import * as Cause from "effect/Cause"
 import * as Effect from "effect/Effect"
 
 export interface CreateProductData {
   sku: ProductSku
   name: string
-  description: string
+  description: Option.Option<string>
 }
 
 export interface UpdateProductData {
   name: string
-  description: string
+  description: Option.Option<string>
 }
 
 export class ProductCatalog extends Effect.Service<ProductCatalog>()("ProductCatalog", {
   effect: Effect.gen(function*() {
-    const products = new Map<ProductSku, Product>()
-    yield* Effect.void
+    const sql = yield* SqlClient.SqlClient
 
-    function listAll() {
-      return Effect.succeed(Array.fromIterable(products.values()))
-    }
+    yield* sql`
+      CREATE TABLE IF NOT EXISTS products (
+        sku TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        description TEXT
+      )
+    `
 
-    function getProduct(productSku: ProductSku) {
-      return Effect.gen(function*() {
-        const product = products.get(productSku)
-        if (!product) return yield* Effect.fail(new ProductNotFoundError())
-
-        return product
+    const listAll = flow(
+      SqlSchema.findAll({
+        Request: Schema.Void,
+        Result: Product,
+        execute: () => sql`SELECT * FROM products ORDER BY sku`
+      }),
+      Effect.catchAllCause((cause) => {
+        return new ProductCatalogError({ cause: Cause.pretty(cause) })
       })
-    }
+    )
+
+    const getProduct = flow(
+      SqlSchema.single({
+        Request: ProductSku,
+        Result: Product,
+        execute: (sku) => sql`SELECT * FROM products WHERE sku = ${sku}`
+      }),
+      Effect.catchTags({
+        "NoSuchElementException": () => new ProductNotFoundError(),
+        "ParseError": (_) => new ProductCatalogError({ cause: String(_) }),
+        "SqlError": (_) => new ProductCatalogError({ cause: String(_.cause) })
+      })
+    )
+
+    const _findProductsBySku = SqlSchema.findAll({
+      Request: ProductSku,
+      Result: Product,
+      execute: (sku) => sql`SELECT * FROM products WHERE sku = ${sku}`
+    })
+
+    const _createProductRecord = SqlSchema.void({
+      Request: Product,
+      execute: (product) =>
+        sql`INSERT INTO products (sku, name, description) VALUES (${product.sku}, ${product.name}, ${
+          product.description || null
+        })`
+    })
 
     function createProduct(data: CreateProductData) {
       return Effect.gen(function*() {
-        if (products.has(data.sku)) return yield* Effect.fail(new ProductSkuAlreadyExistsError({ sku: data.sku }))
+        const existingProducts = yield* _findProductsBySku(data.sku)
+        if (existingProducts.length > 0) return yield* Effect.fail(new ProductSkuAlreadyExistsError({ sku: data.sku }))
 
-        products.set(
-          data.sku,
-          new Product({
-            sku: data.sku,
-            name: data.name,
-            description: data.description
-          })
-        )
+        const product = Product.make({
+          sku: data.sku,
+          name: data.name,
+          description: data.description
+        })
 
-        return products.get(data.sku)!
-      })
+        yield* _createProductRecord(product)
+
+        return product
+      }).pipe(
+        Effect.catchTag("ParseError", (_) => new ProductCatalogError({ cause: String(_) })),
+        Effect.catchTag("SqlError", (_) => new ProductCatalogError({ cause: String(_.cause) }))
+      )
     }
+
+    const _updateProductRecord = SqlSchema.void({
+      Request: Product,
+      execute: (product) =>
+        sql`UPDATE products SET name = ${product.name}, description = ${
+          product.description || null
+        } WHERE sku = ${product.sku}`
+    })
 
     function updateProduct(sku: ProductSku, data: UpdateProductData) {
       return Effect.gen(function*() {
-        const product = products.get(sku)
-        if (!product) return yield* Effect.fail(new ProductNotFoundError())
-        products.set(
-          product.sku,
-          new Product({
-            ...product,
-            name: data.name,
-            description: data.description
-          })
-        )
-
-        return products.get(product.sku)!
-      })
+        const product = yield* getProduct(sku)
+        const updatedProduct = Product.make({
+          ...product,
+          name: data.name,
+          description: data.description
+        })
+        yield* _updateProductRecord(updatedProduct)
+        return updatedProduct
+      }).pipe(
+        Effect.catchTag("ParseError", (_) => new ProductCatalogError({ cause: String(_) })),
+        Effect.catchTag("SqlError", (_) => new ProductCatalogError({ cause: String(_.cause) }))
+      )
     }
 
     function deleteProduct(sku: ProductSku) {
-      return Effect.sync(() => {
-        if (!products.has(sku)) return
-
-        products.delete(sku)
-      })
+      return sql`DELETE FROM products WHERE sku = ${sku}`.pipe(
+        Effect.asVoid,
+        Effect.catchTag("SqlError", (_) => new ProductCatalogError({ cause: String(_.cause) }))
+      )
     }
 
     return { listAll, getProduct, createProduct, updateProduct, deleteProduct }

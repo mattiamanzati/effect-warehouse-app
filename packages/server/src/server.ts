@@ -1,5 +1,6 @@
 import { HttpApiBuilder, HttpApiSwagger, HttpMiddleware } from "@effect/platform"
 import { NodeHttpServer, NodeRuntime } from "@effect/platform-node"
+import { SqliteClient } from "@effect/sql-sqlite-node"
 import { Layer } from "effect"
 import { createServer } from "node:http"
 import { ApiLive } from "./Api.js"
@@ -10,7 +11,10 @@ const HttpLive = HttpApiBuilder.serve(HttpMiddleware.logger).pipe(
   Layer.provide(HttpApiBuilder.middlewareCors()),
   Layer.provide(ApiLive),
   Layer.provide(ProductCatalog.Default),
-  Layer.provide(NodeHttpServer.layer(createServer, { port: 3000 }))
+  Layer.provide(NodeHttpServer.layer(createServer, { port: 3000 })),
+  Layer.provide(SqliteClient.layer({
+    filename: "warehouse.db"
+  }))
 )
 
 Layer.launch(HttpLive).pipe(

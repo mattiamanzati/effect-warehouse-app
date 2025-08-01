@@ -1,22 +1,35 @@
 import * as Array from "effect/Array"
+import * as Brand from "effect/Brand"
 import * as Effect from "effect/Effect"
 import * as SubscriptionRef from "effect/SubscriptionRef"
 
+export type NotificationId = number & Brand.Brand<"NotificationId">
+export const NotificationId = Brand.nominal<NotificationId>()
+
 export interface SnackbarNotificationItem {
+  id: NotificationId
   text: string
   type?: "notification" | "error"
+  duration?: number
 }
 
+export type CreateNotificationPayload = Omit<SnackbarNotificationItem, "id">
+
 export class SnackbarService extends Effect.Service<SnackbarService>()("SnackbarService", {
+  accessors: true,
   effect: Effect.gen(function*() {
     const notificationsRef = yield* SubscriptionRef.make([] as Array<SnackbarNotificationItem>)
+    let notificationId = 0
 
-    function addNotification(data: SnackbarNotificationItem) {
-      return SubscriptionRef.update(notificationsRef, Array.append(data))
+    function addNotification(payload: CreateNotificationPayload) {
+      return SubscriptionRef.update(
+        notificationsRef,
+        Array.append({ ...payload, id: NotificationId(notificationId++) })
+      )
     }
 
-    function removeNotification(data: SnackbarNotificationItem) {
-      return SubscriptionRef.update(notificationsRef, Array.filter((_) => _ !== data))
+    function removeNotification(notificationId: NotificationId) {
+      return SubscriptionRef.update(notificationsRef, Array.filter((_) => _.id !== notificationId))
     }
 
     const changes = notificationsRef.changes

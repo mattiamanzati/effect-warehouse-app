@@ -3,7 +3,7 @@ import { NodeHttpClient } from "@effect/platform-node"
 
 import { describe, expect, it } from "@effect/vitest"
 import { ProductApi } from "@warehouse/domain/ProductApi"
-import { Effect } from "effect"
+import { Effect, Option } from "effect"
 import { ProductSku } from "../../domain/src/Product.js"
 
 describe("Dummy", () => {
@@ -32,8 +32,9 @@ describe("Dummy", () => {
 
         const product = yield* client.products.createProduct({
           payload: {
-            sku: ProductSku.fromString("1234567890"),
-            name: "My new product"
+            sku: ProductSku.make("1234567890"),
+            name: "My new product",
+            description: Option.none()
           }
         })
         expect(product.name).toEqual("My new product")
